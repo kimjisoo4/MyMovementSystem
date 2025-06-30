@@ -1,5 +1,5 @@
-﻿using UnityEngine;
-using StudioScor.Utilities;
+﻿using StudioScor.Utilities;
+using UnityEngine;
 
 namespace StudioScor.MovementSystem
 {
@@ -7,26 +7,36 @@ namespace StudioScor.MovementSystem
     public class MovementSystemWithCharacterController : MovementSystemComponent
     {
         [Header(" [ Use Character Controller ] ")]
-        [SerializeField] private CharacterController _CharacterController;
+        [SerializeField] private CharacterController _characterController;
 
-        private Vector3 _LastVelocity;
-        public override Vector3 LastVelocity => _LastVelocity;
+        private Vector3 _lastVelocity;
+        public override Vector3 LastVelocity => _lastVelocity;
 
-        private Vector3 _TeleporPositiont;
-        private bool _WasTeleport;
+        private Vector3 _teleportPoint;
+        private bool _shouldTeleport;
 
+
+        private void OnValidate()
+        {
+#if UNITY_EDITOR
+            if(!_characterController)
+            {
+                _characterController = GetComponentInParent<CharacterController>();
+            }
+#endif
+        }
         private void Reset()
         {
-            gameObject.TryGetComponentInParentOrChildren(out _CharacterController);
+            gameObject.TryGetComponentInParentOrChildren(out _characterController);
         }
 
         protected override void OnSetup()
         {
             base.OnSetup();
 
-            if (!_CharacterController)
+            if (!_characterController)
             {
-                if (!gameObject.TryGetComponentInParentOrChildren(out _CharacterController))
+                if (!gameObject.TryGetComponentInParentOrChildren(out _characterController))
                 {
                     LogError("Character Contollre Is NULL");
                 }
@@ -35,19 +45,19 @@ namespace StudioScor.MovementSystem
 
         protected override void OnMovement(float deltaTime)
         {
-            _LastVelocity = _addVelocity;
+            _lastVelocity = _addVelocity;
 
             if(_addPosition != default)
             {
-                _LastVelocity += _addPosition.SafeDivide(deltaTime);
+                _lastVelocity += _addPosition.SafeDivide(deltaTime);
             }
 
-            if(_CharacterController.gameObject.activeSelf)
-                _CharacterController.Move(_LastVelocity * deltaTime);
+            if(_characterController.gameObject.activeSelf)
+                _characterController.Move(_lastVelocity * deltaTime);
 
-            if (_WasTeleport)
+            if (_shouldTeleport)
             {
-                _WasTeleport = false;
+                _shouldTeleport = false;
 
                 OnTeleport();
             }
@@ -55,22 +65,22 @@ namespace StudioScor.MovementSystem
 
         private void OnTeleport()
         {
-            _CharacterController.enabled = false;
-            _CharacterController.transform.position = _TeleporPositiont;
-            _CharacterController.enabled = true;
+            _characterController.enabled = false;
+            _characterController.transform.position = _teleportPoint;
+            _characterController.enabled = true;
         }
 
         public override void Teleport(Vector3 position = default, bool isImmediately = true)
         {
             if(isImmediately)
             {
-                _CharacterController.enabled = false;
-                _CharacterController.transform.position = position;
-                _CharacterController.enabled = true;
+                _characterController.enabled = false;
+                _characterController.transform.position = position;
+                _characterController.enabled = true;
             }
             else
             {
-                _WasTeleport = true;
+                _shouldTeleport = true;
             }
         }
     }
